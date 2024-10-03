@@ -1,4 +1,4 @@
-console.log("added");
+
 
 //convert number into the hour minute second
 const time=(time)=>{
@@ -8,6 +8,35 @@ const time=(time)=>{
     remainingSecond = parseInt(remainingSecond/60)
     
     return `${hour}h ${minute}min ${remainingSecond}sec`
+}
+
+//remove active class on btn
+const revomeActiveClass=()=>{
+    const buttons=document.getElementsByClassName('category-btn')
+    
+    for (let item of buttons) {
+        item.classList.remove('active')
+    }
+}
+
+// load video description
+const videoDescrip=async (videoID)=>{
+    console.log(videoID)
+    const url=`https://openapi.programming-hero.com/api/phero-tube/video/${videoID}`
+    const res=await fetch(url)
+    const data = await res.json()
+    displaydescrip(data.video)
+}
+
+const displaydescrip=(video)=>{
+    const details=document.getElementById('modal-content')
+    console.log(video)
+    details.innerHTML = `
+    <img src=${video.thumbnail}/>
+    <p>${video.description}</p>
+    `
+
+    document.getElementById('customModal').showModal()
 }
 //fetch load & show categories on html
 
@@ -19,8 +48,8 @@ const loadCategories = () => {
     .catch((error) => console.log(error));
 };
 //create loadVideoCategories
-const loadVideos = () => {
-  fetch("https://openapi.programming-hero.com/api/phero-tube/videos")
+const loadVideos = (searchText='') => {
+  fetch(`https://openapi.programming-hero.com/api/phero-tube/videos?title=${searchText}`)
     .then((res) => res.json())
     .then((data) => displayVideos(data.videos))
     .catch((error) => console.log(error));
@@ -30,6 +59,21 @@ const loadVideos = () => {
 const displayVideos = (videos) => {
   const videocard = document.getElementById("videos");
   videocard.innerHTML=""
+
+  if(videos.length==0){
+    videocard.classList.remove('grid')
+    videocard.innerHTML=`
+    <div class="min-h-[200px] flex flex-col gap-5 justify-center items-center">
+
+    <img src="./assets/Icon.png"/>
+    <h1 class="font-bold text-xl text-black text-center">Oops!! Sorry, There is no <br> content here</h1>
+    </div>
+    `
+    return 
+  }
+  else{
+    videocard.classList.add('grid')
+  }
   videos.forEach((video) => {
     console.log(video);
     const card = document.createElement("div");
@@ -62,8 +106,8 @@ const displayVideos = (videos) => {
                      ${video.authors[0].verified === true ? ' <img  class="w-4 " src=" https://img.icons8.com/?size=40&id=41816&format=png"  />' :""}
                     </div>
                     
-                    <p></p>
-              <div>
+                    <p><button onclick="videoDescrip('${video.video_id}')" class="btn btn-xs btn-error">Details</button></p>
+              </div>
               
             </div>
         `;
@@ -71,6 +115,9 @@ const displayVideos = (videos) => {
         videocard.append(card)
   });
 };
+
+
+
 // loadcategories video by id
 const loadCategoriesVideo=(id)=>{
     //alert(id)
@@ -78,7 +125,13 @@ const loadCategoriesVideo=(id)=>{
     //fetch for categories id
     fetch(`https://openapi.programming-hero.com/api/phero-tube/category/${id}`)
     .then((res) => res.json())
-    .then((data) => displayVideos(data.category))
+    .then((data) =>{
+        
+        revomeActiveClass()
+        const activeBtn=document.getElementById(`btn-${id}`)
+        activeBtn.classList.add('active')
+        displayVideos(data.category)
+    })
     .catch((error) => console.log(error));
 }
 //create displayCategories
@@ -91,11 +144,15 @@ const displayCategories = (categories) => {
     const buttoncontainer = document.createElement("div");
 
     buttoncontainer.innerHTML=`
-    <button onclick="loadCategoriesVideo(${element.category_id})" class="btn">${element.category}</button>
+    <button id="btn-${element.category_id}" onclick="loadCategoriesVideo(${element.category_id})" class="btn category-btn">${element.category}</button>
     `
     //add btn categories
     categoryList.appendChild(buttoncontainer);
   });
 };
+
+document.getElementById('search-input').addEventListener('keyup', function(event){
+    loadVideos(event.target.value)
+})
 loadCategories();
 loadVideos();
